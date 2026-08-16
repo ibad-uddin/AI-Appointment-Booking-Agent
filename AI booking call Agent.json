@@ -1,0 +1,446 @@
+{
+  "name": "AI booking call Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "voice-agent",
+        "options": {}
+      },
+      "id": "77b0702a-8ff0-47be-94b7-312b94f0b42e",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -368,
+        32
+      ],
+      "webhookId": "b7ba5f91-b40a-40ef-8777-68157db8a1c5"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ba0c7620-227a-43b1-bd18-122ddce86e26",
+              "name": "Name",
+              "value": "Test Customer",
+              "type": "string"
+            },
+            {
+              "id": "f4e5af95-45fc-4021-a694-54779dc54dca",
+              "name": "Service",
+              "value": "Appointment",
+              "type": "string"
+            },
+            {
+              "id": "349491b3-a839-4f4e-9004-90f254d9111b",
+              "name": "Preferred Date",
+              "value": "2026-08-10",
+              "type": "string"
+            },
+            {
+              "id": "1e060335-eb80-423e-acd5-9485a232264d",
+              "name": "Preferred Time",
+              "value": "15:00",
+              "type": "string"
+            },
+            {
+              "id": "aa97a7f2-6861-46f6-814e-9be5784f1549",
+              "name": "email",
+              "value": "ebaduddin845@gmail.com",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "4ce6cbf6-8342-47a8-afe6-3e8d0bb8efef",
+      "name": "Edit Fields",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        -144,
+        32
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "resource": "calendar",
+        "calendar": {
+          "__rl": true,
+          "value": "ebaduddin845@gmail.com",
+          "mode": "list",
+          "cachedResultName": "ebaduddin845@gmail.com"
+        },
+        "timeMin": "={{ DateTime.fromISO($json[\"Preferred Date\"] + \"T\" + $json[\"Preferred Time\"]) }}",
+        "timeMax": "={{ DateTime.fromISO($json[\"Preferred Date\"] + \"T\" + $json[\"Preferred Time\"]).plus(1, \"hour\") }}",
+        "options": {}
+      },
+      "id": "595b4565-2789-48ab-813a-c411b8b85056",
+      "name": "Get availability in a calendar",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        80,
+        32
+      ],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "sgR1VXcqsCFKeNQI",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "e92d800d-d555-4d20-b574-b5041a5629bc",
+              "leftValue": "={{ $json.available }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "83a9ded8-f98c-4565-8572-2338b28962f3",
+      "name": "If",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        304,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "mode": "id",
+          "value": "ebaduddin845@gmail.com",
+          "__regex": "(^[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)*)"
+        },
+        "start": "={{ DateTime.fromISO($('Edit Fields').item.json[\"Preferred Date\"] + \"T\" + $('Edit Fields').item.json[\"Preferred Time\"] + \":00\").toISO() }}",
+        "end": "={{ DateTime.fromISO($('Edit Fields').item.json[\"Preferred Date\"] + \"T\" + $('Edit Fields').item.json[\"Preferred Time\"] + \":00\").plus(1, \"hour\").toISO() }}",
+        "additionalFields": {
+          "summary": "=Test Meeting"
+        }
+      },
+      "id": "ef9d94b1-7aea-4b74-989e-8ec564cf5d26",
+      "name": "Create an event",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        672,
+        -112
+      ],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "sgR1VXcqsCFKeNQI",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Edit Fields').item.json.email }}",
+        "subject": "Appointment confirmed",
+        "message": "=Hi {{ $('Edit Fields').item.json.Name }},  Your appointment has been successfully booked.  Service:{{ $('Edit Fields').item.json.Service }} Date:{{ $('Edit Fields').item.json['Preferred Date'] }}  Time:{{ $('Edit Fields').item.json['Preferred Time'] }}   Thank you!",
+        "options": {}
+      },
+      "id": "5a0ce633-c9e9-4b7e-b127-75fb0f8754a7",
+      "name": "Send a message",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1104,
+        -128
+      ],
+      "webhookId": "b09ff069-062f-4589-812d-fdcf5e66169a",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "jrPWej2M5obe0aV7",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $('Edit Fields').first().json;\n\nconst date = data[\"Preferred Date\"];   // YYYY-MM-DD\nconst time = data[\"Preferred Time\"];    // HH:mm\n\nconst [y, mo, d] = date.split(\"-\").map(Number);\nconst [h, mi] = time.split(\":\").map(Number);\n\n// Build base as UTC so arithmetic is deterministic and wall-clock is preserved\nconst baseMs = Date.UTC(y, mo - 1, d, h, mi, 0);\nconst HOUR = 60 * 60 * 1000;\n\nconst pad = (n) => String(n).padStart(2, \"0\");\nconst fmt = (ms) => {\n  const dt = new Date(ms);\n  return dt.getUTCFullYear() + \"-\" + pad(dt.getUTCMonth() + 1) + \"-\" + pad(dt.getUTCDate()) +\n    \"T\" + pad(dt.getUTCHours()) + \":\" + pad(dt.getUTCMinutes()) + \":00\";\n};\n\nconst offsets = [1 * HOUR, 2 * HOUR, 24 * HOUR];\n\nreturn offsets.map((off, i) => {\n  const startMs = baseMs + off;\n  const endMs = startMs + HOUR;\n  return {\n    json: {\n      Name: data[\"Name\"],\n      email: data[\"email\"],\n      Service: data[\"Service\"],\n      alternativeNumber: i + 1,\n      alternativeStart: fmt(startMs),\n      alternativeEnd: fmt(endMs)\n    }\n  };\n});"
+      },
+      "id": "f926e78a-de92-4821-93af-73dea3c59cbc",
+      "name": "Generate Alternatives",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        528,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "id": "359d1e69-16b3-4c40-9e98-cc935e2abf6d",
+      "name": "Merge Slot + Availability",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        944,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "calendar",
+        "calendar": {
+          "__rl": true,
+          "value": "ebaduddin845@gmail.com",
+          "mode": "list",
+          "cachedResultName": "ebaduddin845@gmail.com"
+        },
+        "timeMin": "={{ $json.alternativeStart }}",
+        "timeMax": "={{ $json.alternativeEnd }}",
+        "options": {}
+      },
+      "id": "cb30cef0-afee-4912-ad6d-de0905824697",
+      "name": "Check Alternative Availability",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        736,
+        416
+      ],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "sgR1VXcqsCFKeNQI",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c1f0a1e2-0000-4000-8000-000000000001",
+              "leftValue": "={{ $json.available }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "9d1cb321-5f70-4c0f-a62b-b7a47aee1bb5",
+      "name": "Keep Available Slots",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        1200,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nconst first = items[0].json;\n\nconst pretty = (iso) => {\n  // iso like YYYY-MM-DDTHH:mm:00\n  const [datePart, timePart] = iso.split(\"T\");\n  const hm = timePart.slice(0, 5);\n  return datePart + \" at \" + hm;\n};\n\nconst lines = items.map((it, i) => {\n  return (i + 1) + \". \" + pretty(it.json.alternativeStart) + \" - \" + pretty(it.json.alternativeEnd);\n});\n\nconst slotsText = lines.join(\"\\n\");\n\nreturn [{\n  json: {\n    Name: first.Name,\n    email: first.email,\n    Service: first.Service,\n    slotsText: slotsText\n  }\n}];"
+      },
+      "id": "449cec60-57ee-475f-8e70-9dfbab08502a",
+      "name": "Build Alternatives Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1424,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.email }}",
+        "subject": "Alternative appointment slots available",
+        "message": "=Hi {{ $json.Name }},\n\nThe time you requested for your {{ $json.Service }} is not available.\n\nHere are some alternative slots that are currently free:\n\n{{ $json.slotsText }}\n\nPlease reply with the number of the slot you would like to book.\n\nThank you!",
+        "options": {}
+      },
+      "id": "db3a949d-f70c-40f6-8ce4-f5f1deb7ce3a",
+      "name": "Send Alternatives",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1648,
+        128
+      ],
+      "webhookId": "3940576c-93a3-4f9c-8b1e-482df029fe04",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "jrPWej2M5obe0aV7",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Get availability in a calendar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get availability in a calendar": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Create an event",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Generate Alternatives",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create an event": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Alternatives": {
+      "main": [
+        [
+          {
+            "node": "Merge Slot + Availability",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Check Alternative Availability",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Slot + Availability": {
+      "main": [
+        [
+          {
+            "node": "Keep Available Slots",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Alternative Availability": {
+      "main": [
+        [
+          {
+            "node": "Merge Slot + Availability",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Keep Available Slots": {
+      "main": [
+        [
+          {
+            "node": "Build Alternatives Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Alternatives Email": {
+      "main": [
+        [
+          {
+            "node": "Send Alternatives",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "ba0614c8-e46f-4d9a-a2e0-d5c2a0f26659",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "339838d73758b1be84d0c5c1a20d294f81ce6f00dd76c0c4fa3213ffea323ef2"
+  },
+  "nodeGroups": [],
+  "id": "jBZm6Se1MUo76lXb",
+  "tags": []
+}
